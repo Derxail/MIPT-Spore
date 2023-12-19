@@ -70,15 +70,8 @@ class Camera:
             (self.position[1] + self.view_size[1] // 2) // self.tile_size)
         for i in range(start_square[1], end_square[1] + 1):
             for j in range(start_square[0], end_square[0] + 1):
-                tile = map.get(i, j, self.tile_size)
-                background = tile.get_image()
-                screen.blit(background, (j * self.tile_size - repere[0], i * self.tile_size - repere[1]))
-                for object in tile.objects:
-                    screen.blit(object.get_image(), (object.position[0] - repere[0], object.position[1] - repere[1]))
-
-    def draw(self, screen, map):
-        self.marching_squares(screen, map)
-
+                image = map.get(i, j, self.tile_size).get_image()
+                screen.blit(image, (j * self.tile_size - repere[0], i * self.tile_size - repere[1]))
 
     def update_view(self, width, height):
         self.view_size = (width, height)

@@ -4,7 +4,7 @@ import pygame
 class Entity:
     def __init__(self, coords: list, image: pygame.Surface, collider: pygame.mask.Mask):
         self.position = coords
-        self.image = image.copy()
+        self.image = image
         self.collider = collider
 
     def get_image(self):
@@ -12,10 +12,9 @@ class Entity:
 
 
 class Creature(Entity):
-    def __init__(self, coords: list, image: pygame.Surface, collider_resolution):
-        surface = pygame.Surface([collider_resolution, collider_resolution], pygame.SRCALPHA)
-        pygame.draw.circle(surface, (255, 255, 255),
-                           (collider_resolution / 2, collider_resolution / 2), collider_resolution / 2)
+    def __init__(self, coords: list, image: pygame.Surface, size):
+        surface = pygame.Surface([size, size], pygame.SRCALPHA)
+        pygame.draw.circle(surface, (255, 255, 255), (size / 2, size / 2), size / 2)
         collider = pygame.mask.from_surface(surface)
         super().__init__(coords, image, collider)
 
@@ -25,5 +24,5 @@ class Enemy(Creature):
 
 
 class Player(Creature):
-    def __init__(self, coords: list, image: pygame.Surface, collider_resolution):
-        super().__init__(coords, image, collider_resolution)
+    def __init__(self, coords: list, image: pygame.Surface, size):
+        super().__init__(coords, image, size)

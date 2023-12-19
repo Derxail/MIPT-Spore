@@ -76,7 +76,6 @@ class Tile:
         self.types = types
         self._image = pygame.Surface([size, size])
         self._image.fill((218, 189, 171))
-        self.objects = []
 
     def get_image(self):
         return self._image
@@ -98,19 +97,50 @@ class Map:
         generate_masks(self.grid_step, self._masks)
         self._fill_grid()
 
+    '''def spreading_possibillity(self):
+        pass'''
+
+    def droplet(self, size_x: int, size_y: int, grid_step: int, beginning_possibillity, droplet_pos, iteration):
+        probability = rd(0,20)
+
+        if probability/20 >= beginning_possibillity:
+            self.vertex_grid[droplet_pos[0]][droplet_pos[1]] = 0
+            next_possibillity = 0.15 + iteration*0.99/(size_y+size_x)
+            droplet_pos_1 = (droplet_pos[0], droplet_pos[1]-1)
+            droplet_pos_2 = (droplet_pos[0], droplet_pos[1]+1)
+            droplet_pos_3 = (droplet_pos[0]-1, droplet_pos[1])
+            droplet_pos_4 = (droplet_pos[0]+1, droplet_pos[1])
+
+            if droplet_pos_1[1] > 0 and self.vertex_grid[droplet_pos_1[0]][droplet_pos_1[1]]!=0:
+                self.droplet(size_x, size_y, grid_step, next_possibillity*0.7, droplet_pos_1, iteration+1)
+            #    print(1)
+            if droplet_pos_2[1] < size_y - 1 and self.vertex_grid[droplet_pos_2[0]][droplet_pos_2[1]]!=0:
+                self.droplet(size_x, size_y, grid_step, next_possibillity*0.7, droplet_pos_2,iteration+1)
+            #    print(2)
+            if droplet_pos_3[0] > 0 and self.vertex_grid[droplet_pos_3[0]][droplet_pos_3[1]]!=0:
+                self.droplet(size_x, size_y, grid_step, next_possibillity, droplet_pos_3,iteration+1)
+            #    print(3)
+            if droplet_pos_4[0] < size_x - 1 and self.vertex_grid[droplet_pos_4[0]][droplet_pos_4[1]]!=0:
+                self.droplet(size_x, size_y, grid_step, next_possibillity, droplet_pos_4,iteration+1)
+            #    print(4)
+
+        else:
+            return 0
+
+
     def _fill_grid(self):
         for i in range(self.size[0]):
             for j in range(self.size[1]):
-                if i == 0 or j == 0 or i == self.size[0] - 1 or j == self.size[1] - 1:
-                    self.vertex_grid[i][j] = 1
-                else:
-                    n = rd(1, 20)
-                    if n >= 12:
-                        self.vertex_grid[i][j] = 1
-                    elif n >= 10:
-                        self.vertex_grid[i][j] = 2
-                    else:
-                        self.vertex_grid[i][j] = 0
+                self.vertex_grid[i][j] = 1
+        self.droplet(self.size[0], self.size[1], self.grid_step,0, (round(self.size[0]/2),round(self.size[1]/2)), 0)
+                #else:
+                 #   n = rd(1, 20)
+                  #  if n >= 12:
+                   #     self.vertex_grid[i][j] = 1
+                    #elif n >= 10:
+                    #    self.vertex_grid[i][j] = 2
+                    #else:
+                      #  self.vertex_grid[i][j] = 0
         self.face_grid = [[-1] * (self.size[1] - 1) for _ in range(self.size[0] - 1)]
         for i in range(self.size[0] - 1):
             for j in range(self.size[1] - 1):
