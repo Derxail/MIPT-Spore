@@ -1,6 +1,14 @@
 import pygame
 from random import randint as rd
+from noise import generate_noise
 
+def nearby_any(x, y, grid, element):
+    return (grid[x+1][y] == element or grid[x][y+1] or
+            grid[x-1][y] == element or grid[x][y-1])
+
+def nearby_all(x, y, grid, element):
+    return (grid[x+1][y] == element and grid[x][y+1] and
+            grid[x-1][y] == element and grid[x][y-1])
 
 def generate_masks(size: int, masks: dict):
     """
@@ -99,18 +107,22 @@ class Map:
         self._fill_grid()
 
     def _fill_grid(self):
+        perlin_noise = generate_noise(self.size[0], self.size[1], period = 15)
         for i in range(self.size[0]):
             for j in range(self.size[1]):
                 if i == 0 or j == 0 or i == self.size[0] - 1 or j == self.size[1] - 1:
                     self.vertex_grid[i][j] = 1
                 else:
-                    n = rd(1, 20)
-                    if n >= 12:
+                    if perlin_noise[i][j] >= 0.06:
                         self.vertex_grid[i][j] = 1
-                    elif n >= 10:
-                        self.vertex_grid[i][j] = 2
-                    else:
+                    elif perlin_noise[i][j] >= -0.2:
                         self.vertex_grid[i][j] = 0
+                    else:
+                        self.vertex_grid[i][j] = 2
+        for i in range(1, self.size[0] - 1):
+            for j in range(1, self.size[1] - 1):
+                if nearby_all(i, j, self.vertex_grid, 0):
+                    self.vertex_grid[i][j] = 0
         self.face_grid = [[-1] * (self.size[1] - 1) for _ in range(self.size[0] - 1)]
         for i in range(self.size[0] - 1):
             for j in range(self.size[1] - 1):
