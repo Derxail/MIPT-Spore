@@ -5,6 +5,8 @@ import field
 import frontend
 import entities
 
+import pygame_menu
+from pygame_menu import themes
 
 class Game:
     def __init__(self):
@@ -12,7 +14,7 @@ class Game:
         self.WIDTH = 800
         self.HEIGHT = 600
         self.FPS = 30
-        self.TOKEN_SIZE = 10
+        self.TOKEN_SIZE = 60
         self.TILE_SIZE = int(self.TOKEN_SIZE * 2)
         self.COLLIDER_RESOLUTION = 300
         self.PLAYER_IMAGE = pygame.Surface([self.TOKEN_SIZE, self.TOKEN_SIZE], pygame.SRCALPHA)
@@ -22,7 +24,7 @@ class Game:
         )
         self.enemies = []
         self.projectiles = []
-        self.player = entities.Player(
+        self.player = entities.Creature(
             [100, 100], self.PLAYER_IMAGE, self.COLLIDER_RESOLUTION / 2
         )
         self.camera = frontend.Camera(
@@ -38,10 +40,31 @@ class Game:
         self.camera.render_tiles(self.map)
         self.running = False
 
+    def start_the_game(self):
+        self.running=True
+
+    def menu_callup(self):
+        mainmenu = pygame_menu.Menu('Welcome', 800, 600, theme=themes.THEME_SOLARIZED)
+        mainmenu.add.text_input('Name: ', default='username', maxchar=20)
+        mainmenu.add.button('Play', self.start_the_game)
+        mainmenu.add.button('Quit', pygame_menu.events.EXIT)
+        while self.running != True:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    exit()
+
+            if mainmenu.is_enabled():
+                mainmenu.update(events)
+                mainmenu.draw(self.screen)
+
+            pygame.display.update()
+
     def camera_follow(self):
         self.camera.position = (self.player.position[1] * self.SCALE_FACTOR, self.player.position[0] * self.SCALE_FACTOR)
 
     def run(self):
+        self.menu_callup()
         self.running = True
         x = 0
         y = 0
@@ -56,6 +79,10 @@ class Game:
                     self.WIDTH = event.w
                     self.HEIGHT = event.h
                     self.camera.update_view(self.WIDTH, self.HEIGHT)
+                elif event.type == pygame.MOUSEMOTION:
+                    self.player.targetting(event)
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    self.projectiles.append(entities.Projectile(self.player.position, self.PLAYER_IMAGE, self.COLLIDER_RESOLUTION // 10, 30 * math.cos(self.player.angle), 30 * math.sin(self.player.angle)))
             keys = pygame.key.get_pressed()
             if keys[pygame.K_a]:
                 vx = -30
@@ -68,6 +95,16 @@ class Game:
             if vx != 0 and vy != 0:
                 vx = int(vx / 1.41)
                 vy = int(vy / 1.41)
+
+            ind = 0
+            while ind < len(self.projectiles):
+                projectile = self.projectiles[ind]
+                if not projectile.flies:
+                    del projectile
+                    del self.projectiles[ind]
+                else:
+                    projectile.move(self.map)
+                    ind += 1
 
             self.camera.marching_squares(self.screen, self.map)
             self.player.move(self.map, vy, vx)
