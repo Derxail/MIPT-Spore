@@ -6,6 +6,8 @@ import math
 class Entity:
     def __init__(self, coords: list, image: pygame.Surface, collider: pygame.mask.Mask):
         self.position = coords
+        self.vx = 0
+        self.vy = 0
         self.image = image.copy()
         self.collider = collider
 
@@ -23,6 +25,10 @@ class Entity:
     def receive_hit(self):
         pass
 
+    def set_speed(self, vx, vy):
+        self.vx = vx
+        self.vy = vy
+
 
 class Creature(Entity):
     def __init__(self, coords: list, image: pygame.Surface, collider_resolution, hp=3):
@@ -35,22 +41,20 @@ class Creature(Entity):
         self.alive = True
         self.angle = 0
 
-    def move(self, map, vx, vy):
+    def move(self, map, dt):
         size = self.collider.get_size()[0]
         occupied_tiles = map.get_occupied_tiles(self)
         map.remove_object(self)
-        dx = vx
-        dy = vy
+        dx = self.vx * dt
+        dy = self.vy * dt
         for position in occupied_tiles:
             tile = map.get(position[0], position[1])
-            offset = (position[1] * map.resolution - (self.position[1] + vy),
-                      position[0] * map.resolution - (self.position[0] + vx))
+            offset = (position[1] * map.resolution - (self.position[1] + dy),
+                      position[0] * map.resolution - (self.position[0] + dx))
             for ind in range(len(tile.colliders)):
                 if tile.types[ind] == 1:
                     if self.collision(tile.colliders[ind], offset):
-                        overlap = self.collider.overlap_mask(tile.colliders[ind],
-                                                             (position[1] * map.resolution - (self.position[1] + vy),
-                                                              position[0] * map.resolution - (self.position[0] + vx)))
+                        overlap = self.collider.overlap_mask(tile.colliders[ind], offset)
                         collision_point = overlap.centroid()
                         center_to_collision_vector = np.array([size / 2, size / 2]) - np.array(collision_point)
                         normal_vect = center_to_collision_vector / np.linalg.norm(center_to_collision_vector)
@@ -59,14 +63,13 @@ class Creature(Entity):
                         self.position[0] += int(delta[1] * 2)
                         self.position[1] += int(delta[0] * 2)
                 elif tile.types[ind] == 2:
-                    area = self.collider.overlap_area(tile.colliders[ind],
-                                                         (position[1] * map.resolution - (self.position[1]),
-                                                          position[0] * map.resolution - (self.position[0])))
+                    area = self.collider.overlap_area(tile.colliders[ind], offset)
                     if area > 10:
-                        dx = vx // 3
-                        dy = vy // 3
-        self.position[0] += dx
-        self.position[1] += dy
+                        dx = self.vx * dt / 3
+                        dy = self.vy * dt / 3
+        #как это работает я не знаю, но лучше не трогать
+        self.position[0] += dy
+        self.position[1] += dx
         map.write_object(self)
 
     def receive_hit(self):
@@ -75,6 +78,15 @@ class Creature(Entity):
     def targetting(self, event):
         if event:
             self.angle = math.atan2((event.pos[1]-self.position[1]), (event.pos[0]-self.position[0]))
+
+
+class Enemy(Creature):
+    def __init__(self,coords: list,
+                 image: pygame.Surface,
+                 collider_resolution,
+                 hp=3
+    ):
+        super().__init__(coords, image, collider_resolution, hp)
 
 
 class Projectile(Entity):
@@ -88,21 +100,21 @@ class Projectile(Entity):
         self.vx = vx
         self.vy = vy
 
-    def move(self, map):
+    def move(self, map, dt):
         occupied_tiles = map.get_occupied_tiles(self)
         map.remove_object(self)
         for position in occupied_tiles:
             tile = map.get(position[0], position[1])
             for ind in range(len(tile.colliders)):
                 if tile.types[ind] == 1:
-                    if self.collision(tile.colliders[ind]):
+                    if self.collision(tile.colliders[ind], (0, 0)): #FIX!!!
                         self.flies = False
             for object in tile.objects:
-                if self.collision(object.collider):
+                if self.collision(object.collider, (0, 0)): #FIX!!!
                     self.flies = False
                     object.receive_hit()
-        self.position[0] += self.vx
-        self.position[1] += self.vy
+        self.position[0] += self.vx * dt
+        self.position[1] += self.vy * dt
         map.write_object(self)
 
     def receive_hit(self):

@@ -1,3 +1,5 @@
+import random
+import math
 import pygame
 from random import randint as rd
 from noise import generate_noise
@@ -104,16 +106,19 @@ class Tile:
 
 
 class Map:
-    def __init__(self, size_x: int, size_y: int, tile_resolution: int):
+    def __init__(self, size_x: int, size_y: int, tile_resolution: int, spawn_points_cnt=10):
         # size_x - горизонтальный размер карты в клетках
         # size_y - вертикальный размер карты в клетках
         # tile_resolution - ширина клетки поля в пикселях системы координат карты
         self.vertex_grid = [[-1] * size_x for _ in range(size_y)]
         self.size = (size_y, size_x)
+        self.spawn_points_cnt = spawn_points_cnt
         self.resolution = tile_resolution
         self._masks = dict()
         generate_masks(self.resolution, self._masks)
+        self.spawn_points = list()
         self._fill_grid()
+
 
     def _fill_grid(self):
         perlin_noise = generate_noise(self.size[0], self.size[1], period = 15)
@@ -128,10 +133,26 @@ class Map:
                         self.vertex_grid[i][j] = 0
                     else:
                         self.vertex_grid[i][j] = 2
-        for i in range(1, self.size[0] - 1):
-            for j in range(1, self.size[1] - 1):
+        spawn_point_candidates = []
+        for i in range(2, self.size[0] - 2):
+            for j in range(2, self.size[1] - 2):
                 if nearby_all(i, j, self.vertex_grid, 0):
                     self.vertex_grid[i][j] = 0
+        spawn_points_s = set()
+        while len(spawn_points_s) < self.spawn_points_cnt:
+            i = random.randint(2, self.size[0] - 2)
+            j = random.randint(2, self.size[1] - 2)
+            if nearby_all(i, j, self.vertex_grid, 0):
+                spawn_points_s.add(
+                    (
+                        (i + 0.5)*self.resolution,
+                        (j + 0.5)*self.resolution
+                    )
+                )
+        self.spawn_points.clear()
+        for el in spawn_points_s:
+            self.spawn_points.append([el[0], el[1]])
+
         self.face_grid = [[-1] * (self.size[1] - 1) for _ in range(self.size[0] - 1)]
         for i in range(self.size[0] - 1):
             for j in range(self.size[1] - 1):
@@ -152,13 +173,16 @@ class Map:
             return Tile(exception_size, self._masks, [], [])
         return self.face_grid[i][j]
 
+    def get_spawn_points(self):
+        return self.spawn_points
+
     def get_occupied_tiles(self, object):
         size = object.collider.get_size()
-        innate_pos = (object.position[0] // self.resolution, object.position[1] // self.resolution)
+        innate_pos = (round(object.position[0]) // self.resolution, round(object.position[1]) // self.resolution)
         res = [innate_pos]
         for direction in (0, size[1]), (size[0], 0), (size[0], size[1]):
-            corner_pos = ((object.position[0] + direction[0]) // self.resolution,
-                          (object.position[1] + direction[1]) // self.resolution)
+            corner_pos = ((round(object.position[0]) + direction[0]) // self.resolution,
+                          (round(object.position[1]) + direction[1]) // self.resolution)
             if corner_pos != innate_pos:
                 res.append(corner_pos)
         return res

@@ -9,7 +9,6 @@ class Camera:
         self.position = position
         self.view_size = view_size
         self.tile_size = scale
-        self.zoom_factor = 1
 
     def render_tiles(self, map):
         for i in range(map.size[0] - 1):
