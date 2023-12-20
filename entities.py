@@ -77,6 +77,7 @@ class Creature(Entity):
             self.angle = math.atan2((event.pos[1]-self.position[1]), (event.pos[0]-self.position[0]))
 
 
+
 class Projectile(Entity):
     def __init__(self, coords, image, collider_resolution, vx, vy):
         surface = pygame.Surface([collider_resolution, collider_resolution], pygame.SRCALPHA)
