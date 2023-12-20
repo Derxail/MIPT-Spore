@@ -88,7 +88,6 @@ class Enemy(Creature):
     ):
         super().__init__(coords, image, collider_resolution, hp)
 
-
 class Projectile(Entity):
     def __init__(self, coords, image, collider_resolution, vx, vy):
         surface = pygame.Surface([collider_resolution, collider_resolution], pygame.SRCALPHA)

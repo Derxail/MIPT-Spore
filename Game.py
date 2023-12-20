@@ -50,12 +50,14 @@ class Game:
         print(self.map.get_spawn_points())
         self.map.write_object(self.player)
         self.camera.render_tiles(self.map)
+        self.paused = False
         self.running = False
+        self.pause_text = pause_text = pygame.font.SysFont('Consolas', 32).render('Ok, nigga we\'ll wait', True, pygame.color.Color('White'))
 
     def start_the_game(self):
         self.running=True
 
-    def menu_callup(self):
+    def main_menu_callup(self):
         mainmenu = pygame_menu.Menu('Welcome', 800, 600, theme=themes.THEME_SOLARIZED)
         mainmenu.add.text_input('Name: ', default='username', maxchar=20)
         mainmenu.add.button('Play', self.start_the_game)
@@ -72,6 +74,8 @@ class Game:
 
             pygame.display.update()
 
+    def pause_menu_callup(self):
+        pass
     def camera_follow(self):
         self.camera.position = (self.player.position[1] * self.SCALE_FACTOR, self.player.position[0] * self.SCALE_FACTOR)
 
@@ -95,9 +99,11 @@ class Game:
         self.map.write_object(enemy)
 
     def run(self):
-        self.menu_callup()
+
+        self.main_menu_callup()
         self.start_the_game()
         enemy_spawn_timer = 0.0
+
         while self.running:
             vx = 0
             vy = 0
@@ -118,8 +124,11 @@ class Game:
                     self.camera.update_view(self.WIDTH, self.HEIGHT)
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.targetting(event)
+
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.projectiles.append(entities.Projectile(self.player.position, self.PLAYER_IMAGE, self.COLLIDER_RESOLUTION // 10, 30 * math.cos(self.player.angle), 30 * math.sin(self.player.angle)))
+
+
             keys = pygame.key.get_pressed()
             if keys[pygame.K_a]:
                 vx = -1000
@@ -129,6 +138,15 @@ class Game:
                 vy = -1000
             if keys[pygame.K_s]:
                 vy = 1000
+            if keys[pygame.K_ESCAPE]:
+                if self.paused == True:
+                    self.pause=False
+                else:
+                    self.paused = True
+                if self.paused:
+                    self.pause_menu_callup()
+                    self.screen.blit(self.pause_text, (100, 100))
+
             if vx != 0 and vy != 0:
                 vx = int(vx / 1.41)
                 vy = int(vy / 1.41)
