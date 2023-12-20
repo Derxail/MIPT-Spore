@@ -12,7 +12,7 @@ class Game:
         self.WIDTH = 800
         self.HEIGHT = 600
         self.FPS = 30
-        self.TOKEN_SIZE = 10
+        self.TOKEN_SIZE = 60
         self.TILE_SIZE = int(self.TOKEN_SIZE * 2)
         self.COLLIDER_RESOLUTION = 300
         self.PLAYER_IMAGE = pygame.Surface([self.TOKEN_SIZE, self.TOKEN_SIZE], pygame.SRCALPHA)
@@ -22,7 +22,7 @@ class Game:
         )
         self.enemies = []
         self.projectiles = []
-        self.player = entities.Player(
+        self.player = entities.Creature(
             [100, 100], self.PLAYER_IMAGE, self.COLLIDER_RESOLUTION / 2
         )
         self.camera = frontend.Camera(
@@ -56,6 +56,8 @@ class Game:
                     self.WIDTH = event.w
                     self.HEIGHT = event.h
                     self.camera.update_view(self.WIDTH, self.HEIGHT)
+                elif event.type == pygame.MOUSEMOTION:
+                    self.player.targetting(event)
             keys = pygame.key.get_pressed()
             if keys[pygame.K_a]:
                 vx = -30
