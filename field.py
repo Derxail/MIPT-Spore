@@ -92,18 +92,27 @@ class Tile:
     def set_image(self, image):
         self._image = image.copy()
 
+    def add(self, object):
+        self.objects.append(object)
+
+    def remove(self, object):
+        try:
+            self.objects.remove(object)
+        except ValueError:
+            print("Out!", object.position)
+
 
 
 class Map:
-    def __init__(self, size_x: int, size_y: int, grid_step: int):
+    def __init__(self, size_x: int, size_y: int, tile_resolution: int):
         # size_x - горизонтальный размер карты в клетках
         # size_y - вертикальный размер карты в клетках
-        # grid_step - ширина клетки поля в пикселях
+        # tile_resolution - ширина клетки поля в пикселях системы координат карты
         self.vertex_grid = [[-1] * size_x for _ in range(size_y)]
         self.size = (size_y, size_x)
-        self.grid_step = grid_step
+        self.resolution = tile_resolution
         self._masks = dict()
-        generate_masks(self.grid_step, self._masks)
+        generate_masks(self.resolution, self._masks)
         self._fill_grid()
 
     def _fill_grid(self):
@@ -136,9 +145,30 @@ class Map:
                             codes[ind] += '1'
                         else:
                             codes[ind] += '0'
-                self.face_grid[i][j] = Tile(self.grid_step, self._masks, codes, types)
+                self.face_grid[i][j] = Tile(self.resolution, self._masks, codes, types)
 
     def get(self, i, j, exception_size=60):
         if i < 0 or i >= self.size[0] - 1 or j < 0 or j >= self.size[1] - 1:
             return Tile(exception_size, self._masks, [], [])
         return self.face_grid[i][j]
+
+    def get_occupied_tiles(self, object):
+        size = object.collider.get_size()
+        innate_pos = (object.position[0] // self.resolution, object.position[1] // self.resolution)
+        res = [innate_pos]
+        for direction in (0, size[1]), (size[0], 0), (size[0], size[1]):
+            corner_pos = ((object.position[0] + direction[0]) // self.resolution,
+                          (object.position[1] + direction[1]) // self.resolution)
+            if corner_pos != innate_pos:
+                res.append(corner_pos)
+        return res
+
+    def write_object(self, object):
+        occupied_tiles = self.get_occupied_tiles(object)
+        for position in occupied_tiles:
+            self.get(position[0], position[1]).add(object)
+
+    def remove_object(self, object):
+        occupied_tiles = self.get_occupied_tiles(object)
+        for position in occupied_tiles:
+            self.get(position[0], position[1]).remove(object)

@@ -1,5 +1,6 @@
 import pygame
 import field
+from math import ceil
 
 
 class Camera:
@@ -58,23 +59,32 @@ class Camera:
                         pygame.draw.polygon(surface, self.color[tile.types[ind]], [[0, size], [0, half], [half, size]])
                     elif code == '1111':
                         pygame.draw.polygon(surface, self.color[tile.types[ind]], [[0, 0], [0, size], [size, size], [size, 0]])
+                #pygame.draw.line(surface, (0, 0, 0), [0, 0], [0, size])
+                #pygame.draw.line(surface, (0, 0, 0), [0, size], [size, size])
+                #pygame.draw.line(surface, (0, 0, 0), [size, size], [size, 0])
+                #pygame.draw.line(surface, (0, 0, 0), [size, 0], [0, 0])
                 tile.set_image(surface)
 
     def marching_squares(self, screen: pygame.Surface, map: field.Map):
-        repere = (self.position[0] - self.view_size[0] // 2, self.position[1] - self.view_size[1] // 2)
+        repere = (self.position[0] - self.view_size[0] / 2, self.position[1] - self.view_size[1] // 2)
         start_square = (
-            (self.position[0] - self.view_size[0] // 2) // self.tile_size,
-            (self.position[1] - self.view_size[1] // 2) // self.tile_size)
+            int((self.position[0] - self.view_size[0] / 2) / self.tile_size) - 1,
+            int((self.position[1] - self.view_size[1] / 2) / self.tile_size) - 1)
         end_square = (
-            (self.position[0] + self.view_size[0] // 2) // self.tile_size,
-            (self.position[1] + self.view_size[1] // 2) // self.tile_size)
+            ceil((self.position[0] + self.view_size[0] / 2) / self.tile_size),
+            ceil((self.position[1] + self.view_size[1] / 2) / self.tile_size))
+        objects_to_draw = set()
         for i in range(start_square[1], end_square[1] + 1):
             for j in range(start_square[0], end_square[0] + 1):
                 tile = map.get(i, j, self.tile_size)
                 background = tile.get_image()
                 screen.blit(background, (j * self.tile_size - repere[0], i * self.tile_size - repere[1]))
                 for object in tile.objects:
-                    screen.blit(object.get_image(), (object.position[0] - repere[0], object.position[1] - repere[1]))
+                    objects_to_draw.add(object)
+        for object in objects_to_draw:
+            i = object.position[0] * self.tile_size / map.resolution
+            j = object.position[1] * self.tile_size / map.resolution
+            screen.blit(object.get_image(), (j - repere[0], i - repere[1]))
 
     def draw(self, screen, map):
         self.marching_squares(screen, map)
