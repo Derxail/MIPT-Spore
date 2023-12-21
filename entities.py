@@ -47,9 +47,8 @@ class Creature(Entity):
         self.health_bar = UI.HealthBar(
             hp,
             hp,
-            coords,
             100,
-            10,
+            20,
             (255,0,0),
             (0,0,0)
         )

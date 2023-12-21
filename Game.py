@@ -2,6 +2,8 @@ import math
 import random
 
 import pygame
+
+import UI
 import field
 import frontend
 import entities
@@ -66,6 +68,14 @@ class Game:
         self.paused = False
         self.running = False
         self.pause_text = pause_text = pygame.font.SysFont('Consolas', 32).render('Ok, nigga we\'ll wait', True, pygame.color.Color('White'))
+        self.xp_bar = UI.HealthBar(
+            value=0,
+            max_value=10,
+            length=self.WIDTH*0.85,
+            height=30,
+            color=(30, 255, 0),
+            outline_thickness=3
+        )
 
     def start_the_game(self):
         self.running=True
@@ -89,11 +99,21 @@ class Game:
 
     def pause_menu_callup(self):
         pass
+
+    def draw_ui(self):
+        self.screen.blit(self.xp_bar.surface, (0.075*self.WIDTH, 20))
+
     def camera_follow(self):
         self.camera.position = (self.player.position[1] * self.SCALE_FACTOR, self.player.position[0] * self.SCALE_FACTOR)
 
     def on_enemy_kill_by_player(self):
-        print("kill")
+        value = self.xp_bar.value
+        max_value = self.xp_bar.max_value
+        if value + 1 >= max_value:
+            self.xp_bar.set_max_value(max_value + 5)
+            self.xp_bar.set_value(0)
+        else:
+            self.xp_bar.set_value(value + 2)
 
     def spawn_enemy(self):
         if(len(self.enemies) >= self.ENEMIES_CNT):
@@ -224,7 +244,7 @@ class Game:
             self.map.update(dt)
             self.camera_follow()
             self.camera.marching_squares(self.screen, self.map)
-
+            self.draw_ui()
             pygame.display.flip()
 
         pygame.quit()

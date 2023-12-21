@@ -5,17 +5,16 @@ class HealthBar:
             self,
             value,
             max_value,
-            position,
             length,
             height,
             color,
             outline_color = (0, 0, 0),
             back_color = (244, 164, 96),
-            outline_thickness = 3
+            font_color = (255, 255, 255),
+            outline_thickness = 2
     ):
         self.value = value
         self.max_value = max_value
-        self.position = position
         self.color = color
         self.outline_color = outline_color
         self.surface = pygame.Surface((length, height))
@@ -23,6 +22,10 @@ class HealthBar:
         self.height = height
         self.ouline_thickness = outline_thickness
         self.back_color = back_color
+        self.font_color = font_color
+        self.font = font = pygame.font.SysFont('Comic Sans MS', int(self.height * 0.85))
+        self.text = self.font.render(
+            str(str(self.value)+"/"+str(self.max_value)), False, self.font_color)
         self.redraw()
 
     def redraw(self):
@@ -57,6 +60,12 @@ class HealthBar:
             ),
             self.ouline_thickness
         )
+        self.text = self.font.render(
+            str(self.value) + "/" + str(self.max_value),
+            False,
+            self.font_color
+        )
+        self.surface.blit(self.text, (self.length / 2 - len(str(self.max_value))*0.8*self.height, -self.ouline_thickness))
 
 
     def set_value(self, value):
