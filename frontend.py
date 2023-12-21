@@ -68,14 +68,15 @@ class Camera:
                 tile.set_image(surface)
 
     def marching_squares(self, screen: pygame.Surface, map: field.Map):
-        repere = (self.position[0] - self.view_size[0] / 2, self.position[1] - self.view_size[1] // 2)
+        repere = (self.position[0] - self.view_size[0] / 2, self.position[1] - self.view_size[1] / 2)
         start_square = (
-            int((self.position[0] - self.view_size[0] / 2) / self.tile_size) - 1,
-            int((self.position[1] - self.view_size[1] / 2) / self.tile_size) - 1)
+            ceil((self.position[0] - self.view_size[0] / 2) / self.tile_size) - 1,
+            ceil((self.position[1] - self.view_size[1] / 2) / self.tile_size) - 1)
         end_square = (
             ceil((self.position[0] + self.view_size[0] / 2) / self.tile_size),
             ceil((self.position[1] + self.view_size[1] / 2) / self.tile_size))
         objects_to_draw = set()
+        objects_with_ui_elements = set()
         for i in range(start_square[1], end_square[1] + 1):
             for j in range(start_square[0], end_square[0] + 1):
                 tile = map.get(i, j, self.tile_size)
@@ -83,15 +84,36 @@ class Camera:
                 screen.blit(background, (j * self.tile_size - repere[0], i * self.tile_size - repere[1]))
                 for object in tile.objects:
                     objects_to_draw.add(object)
-        for object in objects_to_draw:
-            if isinstance(object, entities.Creature):
-                print(object.hp)
+                    if isinstance(object, entities.Creature):
+                        objects_with_ui_elements.add(object)
 
+        for object in objects_to_draw:
             i = object.position[0] * self.tile_size / map.resolution
             j = object.position[1] * self.tile_size / map.resolution
             screen.blit(
                 utils.rotate_image(object.get_image(), -(object.angle/math.pi)*180),
                 (j - repere[0], i - repere[1])
+            )
+
+        for particle in map.particles:
+            i = float(particle.position[0]) * float(self.tile_size) / float(map.resolution)
+            j = float(particle.position[1]) * float(self.tile_size) / float(map.resolution)
+            pygame.draw.circle(
+                screen,
+                particle.variated_color,
+                (j - repere[0], i - repere[1]),
+                particle.radius
+            )
+
+        for object in objects_with_ui_elements:
+            i = object.position[0] * self.tile_size / map.resolution
+            j = object.position[1] * self.tile_size / map.resolution
+            size_x, size_y = object.collider.get_size()
+
+            screen.blit(
+                object.health_bar.surface,
+                (j - repere[0] - 0.5*abs(object.health_bar.length - size_x * self.tile_size / map.resolution),
+                 i - repere[1] + size_y * self.tile_size / map.resolution)
             )
 
     def draw(self, screen, map):

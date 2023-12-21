@@ -23,10 +23,10 @@ class Game:
         self.TOKEN_SIZE = 70
         self.TILE_SIZE = int(self.TOKEN_SIZE * 2)
         self.COLLIDER_RESOLUTION = 300
-        self.PLAYER_SIZE = self.TOKEN_SIZE * 1.5
-        self.ENEMIES_CNT = 30
-        self.ENEMIES_SPAWN_PERIOD = 0.5
-        self.SPAWN_POINTS_CNT = 30
+        self.PLAYER_SIZE = self.TOKEN_SIZE * 1.0
+        self.ENEMIES_CNT = 15
+        self.ENEMIES_SPAWN_PERIOD = 0.35
+        self.SPAWN_POINTS_CNT = 20
         self.PLAYER_IMAGE = pygame.image.load('images\\Player.png')
         self.PLAYER_IMAGE = pygame.transform.scale(
             self.PLAYER_IMAGE,
@@ -57,6 +57,7 @@ class Game:
             self.GRID_W,
             self.GRID_H,
             self.COLLIDER_RESOLUTION,
+            self.SCALE_FACTOR,
             spawn_points_cnt=self.SPAWN_POINTS_CNT
         )
         print(self.map.get_spawn_points())
@@ -91,6 +92,9 @@ class Game:
     def camera_follow(self):
         self.camera.position = (self.player.position[1] * self.SCALE_FACTOR, self.player.position[0] * self.SCALE_FACTOR)
 
+    def on_enemy_kill_by_player(self):
+        print("kill")
+
     def spawn_enemy(self):
         if(len(self.enemies) >= self.ENEMIES_CNT):
             return
@@ -106,7 +110,7 @@ class Game:
         enemy = entities.Creature(
             coords=point,
             image=self.PLAYER_IMAGE,
-            collider_resolution=self.COLLIDER_RESOLUTION,
+            collider_resolution=self.COLLIDER_RESOLUTION / 2,
             hp=random.randint(2, 10)
         )
         self.enemies.append(enemy)
@@ -125,6 +129,8 @@ class Game:
             v * math.cos(angle),
             v * math.sin(angle),
             id(self.player),
+            player_id=id(self.player),
+            kill_callback=self.on_enemy_kill_by_player,
             ang_speed=9
         )
         self.projectiles.append(projectile)
@@ -215,6 +221,7 @@ class Game:
                     enemy.move(self.map, dt)
                     ind += 1
 
+            self.map.update(dt)
             self.camera_follow()
             self.camera.marching_squares(self.screen, self.map)
 

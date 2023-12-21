@@ -1,4 +1,6 @@
 import random
+import copy
+import entities
 import utils
 import math
 import pygame
@@ -122,9 +124,8 @@ class Tile:
             print("Out!", object.position)
 
 
-
 class Map:
-    def __init__(self, size_x: int, size_y: int, tile_resolution: int, spawn_points_cnt=10):
+    def __init__(self, size_x: int, size_y: int, tile_resolution: int, scale_factor, spawn_points_cnt=10):
         # size_x - горизонтальный размер карты в клетках
         # size_y - вертикальный размер карты в клетках
         # tile_resolution - ширина клетки поля в пикселях системы координат карты
@@ -136,6 +137,8 @@ class Map:
         generate_masks(self.resolution, self._masks)
         self.spawn_points = list()
         self._fill_grid()
+        self.scale_factor = scale_factor
+        self.particles = []
 
 
     def _fill_grid(self):
@@ -200,7 +203,10 @@ class Map:
         return self.spawn_points
 
     def get_occupied_tiles(self, object):
-        size = object.collider.get_size()
+        if object.collider is not None:
+            size = object.collider.get_size()
+        else:
+            size = [0, 0]
         innate_pos = (round(object.position[0]) // self.resolution, round(object.position[1]) // self.resolution)
         res = [innate_pos]
         for direction in (0, size[1]), (size[0], 0), (size[0], size[1]):
@@ -219,3 +225,19 @@ class Map:
         occupied_tiles = self.get_occupied_tiles(object)
         for position in occupied_tiles:
             self.get(position[0], position[1]).remove(object)
+
+    def spawn_particles_bundle(self, count, color, position, lifetime = 1, speed = 500):
+        for i in range(count):
+            self.particles.append(
+                entities.Particle(copy.deepcopy(position), copy.deepcopy(color), float(lifetime), float(speed))
+            )
+
+    def update(self, dt):
+        ind = 0
+        while ind < len(self.particles):
+            particle = self.particles[ind]
+            if not particle.alive:
+                self.particles.remove(particle)
+            else:
+                particle.update(dt)
+                ind += 1
