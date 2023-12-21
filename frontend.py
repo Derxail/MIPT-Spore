@@ -1,11 +1,14 @@
+import math
+import entities
 import pygame
 import field
+import utils
 from math import ceil
 
 
 class Camera:
     def __init__(self, position, view_size, scale):
-        self.color = {0: (218, 189, 171), 1: (244, 164, 96), 2: (11, 91, 159)}
+        self.color = {0: (218, 189, 171), 1: (244, 164, 96), 2: (11, 91, 159), 3: (50, 50, 0)}
         self.position = position
         self.view_size = view_size
         self.tile_size = scale
@@ -81,9 +84,15 @@ class Camera:
                 for object in tile.objects:
                     objects_to_draw.add(object)
         for object in objects_to_draw:
+            if isinstance(object, entities.Creature):
+                print(object.hp)
+
             i = object.position[0] * self.tile_size / map.resolution
             j = object.position[1] * self.tile_size / map.resolution
-            screen.blit(object.get_image(), (j - repere[0], i - repere[1]))
+            screen.blit(
+                utils.rotate_image(object.get_image(), -(object.angle/math.pi)*180),
+                (j - repere[0], i - repere[1])
+            )
 
     def draw(self, screen, map):
         self.marching_squares(screen, map)

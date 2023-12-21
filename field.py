@@ -1,8 +1,11 @@
 import random
+import utils
 import math
 import pygame
 from random import randint as rd
 from noise import generate_noise
+
+TILE_TYPES = {"air": 0, "wall": 1, "water": 2, "bedrock": 3}
 
 def nearby_any(x, y, grid, element):
     return (grid[x+1][y] == element or grid[x][y+1] or
@@ -78,15 +81,30 @@ class Tile:
     types - типы вершин тайла: 0 - пустая вершина, 1 - препятствие, 2 - вода.
     """
 
-    def __init__(self, size, masks: dict, codes: list, types: list):
+    def __init__(self, size, masks: dict, codes: list, types: list, hp=10):
         self.colliders = []
         for i in range(len(codes)):
             self.colliders.append(masks[codes[i]])
         self.codes = codes
         self.types = types
         self._image = pygame.Surface([size, size])
+        self.size = size
+        self.hp = hp
         self._image.fill((218, 189, 171))
         self.objects = []
+
+    def recieve_hit(self, power):
+        self.hp -= power
+
+    def set_color(self, color, back_color, layer_index):
+        self._image.fill(back_color)
+        print(color)
+        utils.gen_polygon(
+                self._image,
+                self.codes[layer_index],
+                color,
+                self.size
+            )
 
     def get_image(self):
         return self._image
@@ -125,19 +143,19 @@ class Map:
         for i in range(self.size[0]):
             for j in range(self.size[1]):
                 if i == 0 or j == 0 or i == self.size[0] - 1 or j == self.size[1] - 1:
-                    self.vertex_grid[i][j] = 1
+                    self.vertex_grid[i][j] = TILE_TYPES["bedrock"]
                 else:
                     if perlin_noise[i][j] >= 0.06:
-                        self.vertex_grid[i][j] = 1
+                        self.vertex_grid[i][j] = TILE_TYPES["wall"]
                     elif perlin_noise[i][j] >= -0.2:
-                        self.vertex_grid[i][j] = 0
+                        self.vertex_grid[i][j] = TILE_TYPES["air"]
                     else:
-                        self.vertex_grid[i][j] = 2
-        spawn_point_candidates = []
+                        self.vertex_grid[i][j] = TILE_TYPES["water"]
+
         for i in range(2, self.size[0] - 2):
             for j in range(2, self.size[1] - 2):
                 if nearby_all(i, j, self.vertex_grid, 0):
-                    self.vertex_grid[i][j] = 0
+                    self.vertex_grid[i][j] = TILE_TYPES["air"]
         spawn_points_s = set()
         while len(spawn_points_s) < self.spawn_points_cnt:
             i = random.randint(2, self.size[0] - 2)
@@ -158,7 +176,12 @@ class Map:
             for j in range(self.size[1] - 1):
                 verts = [self.vertex_grid[i][j], self.vertex_grid[i][j + 1],
                          self.vertex_grid[i + 1][j], self.vertex_grid[i + 1][j + 1]]
-                types = list(set(verts))
+                types = set(verts)
+                if TILE_TYPES["bedrock"] in types:
+                    types = [TILE_TYPES["bedrock"]]
+                else:
+                    types = list(types)
+
                 codes = [''] * len(types)
                 for vertex in verts:
                     for ind in range(len(types)):

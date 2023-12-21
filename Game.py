@@ -9,6 +9,9 @@ import entities
 import pygame_menu
 from pygame_menu import themes
 
+import utils
+
+
 class Game:
     def __init__(self):
         pygame.init()
@@ -17,17 +20,26 @@ class Game:
         self.FPS = 30
         self.GRID_W = 50
         self.GRID_H = 30
-        self.TOKEN_SIZE = 5
+        self.TOKEN_SIZE = 70
         self.TILE_SIZE = int(self.TOKEN_SIZE * 2)
         self.COLLIDER_RESOLUTION = 300
-        self.ENEMIES_CNT = 100
+        self.PLAYER_SIZE = self.TOKEN_SIZE * 1.5
+        self.ENEMIES_CNT = 30
         self.ENEMIES_SPAWN_PERIOD = 0.5
         self.SPAWN_POINTS_CNT = 30
-        self.PLAYER_IMAGE = pygame.Surface([self.TOKEN_SIZE, self.TOKEN_SIZE], pygame.SRCALPHA)
-        self.SCALE_FACTOR = self.TILE_SIZE / self.COLLIDER_RESOLUTION
-        pygame.draw.circle(
-            self.PLAYER_IMAGE, (9, 158, 160), (self.TOKEN_SIZE / 2, self.TOKEN_SIZE / 2), self.TOKEN_SIZE / 2
+        self.PLAYER_IMAGE = pygame.image.load('images\\Player.png')
+        self.PLAYER_IMAGE = pygame.transform.scale(
+            self.PLAYER_IMAGE,
+            (self.PLAYER_SIZE,
+            self.PLAYER_SIZE)
         )
+        self.PROJECTILE_IMAGE = pygame.image.load('images\\Axe.png')
+        self.PROJECTILE_IMAGE = pygame.transform.scale(
+            self.PROJECTILE_IMAGE,
+            (self.TOKEN_SIZE,
+             self.TOKEN_SIZE)
+        )
+        self.SCALE_FACTOR = self.TILE_SIZE / self.COLLIDER_RESOLUTION
         self.enemies = []
         self.projectiles = []
         self.player = entities.Creature(
@@ -86,17 +98,37 @@ class Game:
         point = spawn_points[random.randint(0, self.SPAWN_POINTS_CNT - 1)]
 
         #СПАСИ И СОХРАНИ!---------------------------------------
-        if (point[0] >= self.COLLIDER_RESOLUTION*self.GRID_H
-            or point[1] >= self.COLLIDER_RESOLUTION*self.GRID_W):
+        if (point[0] >= 0.85*self.COLLIDER_RESOLUTION*self.GRID_H
+            or point[1] >= 0.85*self.COLLIDER_RESOLUTION*self.GRID_W):
             return
         #-------------------------------------------------------
-        enemy = entities.Enemy(
+
+        enemy = entities.Creature(
             coords=point,
             image=self.PLAYER_IMAGE,
-            collider_resolution=self.COLLIDER_RESOLUTION
+            collider_resolution=self.COLLIDER_RESOLUTION,
+            hp=random.randint(2, 10)
         )
         self.enemies.append(enemy)
         self.map.write_object(enemy)
+
+    def launch_projectile(
+            self,
+            initial_pos,
+            v,
+            angle
+    ):
+        projectile = entities.Projectile(
+            initial_pos.copy(),
+            self.PROJECTILE_IMAGE,
+            self.COLLIDER_RESOLUTION // 10,
+            v * math.cos(angle),
+            v * math.sin(angle),
+            id(self.player),
+            ang_speed=9
+        )
+        self.projectiles.append(projectile)
+        self.map.write_object(projectile)
 
     def run(self):
 
@@ -123,10 +155,14 @@ class Game:
                     self.HEIGHT = event.h
                     self.camera.update_view(self.WIDTH, self.HEIGHT)
                 elif event.type == pygame.MOUSEMOTION:
-                    self.player.targetting(event)
-
+                    self.player.angle = utils.angle_by_coords(
+                        pos0=event.pos,
+                        pos=(self.camera.view_size[0] / 2 + self.PLAYER_SIZE/2,
+                             self.camera.view_size[1] / 2 + self.PLAYER_SIZE/2
+                        )
+                    )
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    self.projectiles.append(entities.Projectile(self.player.position, self.PLAYER_IMAGE, self.COLLIDER_RESOLUTION // 10, 30 * math.cos(self.player.angle), 30 * math.sin(self.player.angle)))
+                    self.launch_projectile(self.player.position, 1000, self.player.angle)
 
 
             keys = pygame.key.get_pressed()
@@ -152,21 +188,35 @@ class Game:
                 vy = int(vy / 1.41)
             self.player.set_speed(vx, vy)
 
+            for enemy in self.enemies:
+                enemy.update(self.map, dt)
+
+            self.player.update(self.map, dt)
+
             ind = 0
             while ind < len(self.projectiles):
                 projectile = self.projectiles[ind]
+                projectile.update(self.map, dt)
                 if not projectile.flies:
-                    del projectile
-                    del self.projectiles[ind]
+                    self.projectiles.remove(projectile)
+                    self.map.remove_object(projectile)
                 else:
                     projectile.move(self.map, dt)
                     ind += 1
 
-            self.camera.marching_squares(self.screen, self.map)
             self.player.move(self.map, dt)
-            for enemy in self.enemies:
-                enemy.move(self.map, dt)
+            ind = 0
+            while ind < len(self.enemies):
+                enemy = self.enemies[ind]
+                if not enemy.alive:
+                    self.enemies.remove(enemy)
+                    self.map.remove_object(enemy)
+                else:
+                    enemy.move(self.map, dt)
+                    ind += 1
+
             self.camera_follow()
+            self.camera.marching_squares(self.screen, self.map)
 
             pygame.display.flip()
 
